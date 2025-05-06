@@ -1,0 +1,96 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - replication-network
+
+  db1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=replicadb
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - REPLICA_ID=replica1
+    volumes:
+      - db1-data:/var/lib/postgresql/data
+    depends_on:
+      - rabbitmq
+    networks:
+      - replication-network
+
+  db2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=replicadb
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - REPLICA_ID=replica2
+    volumes:
+      - db2-data:/var/lib/postgresql/data
+    depends_on:
+      - rabbitmq
+    networks:
+      - replication-network
+
+  db3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=replicadb
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672/
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - REPLICA_ID=replica3
+    volumes:
+      - db3-data:/var/lib/postgresql/data
+    depends_on:
+      - rabbitmq
+    networks:
+      - replication-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - replication-network
+
+networks:
+  replication-network:
+    driver: bridge
+
+volumes:
+  db1-data:
+  db2-data:
+  db3-data:
+  pgadmin-data:
